@@ -80,6 +80,14 @@ function parseTagIds(value: unknown) {
   return raw.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0);
 }
 
+function generateSku(furnitureType?: unknown, name?: unknown) {
+  const source = String(furnitureType || name || "FUR")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  const prefix = (source.slice(0, 3) || "FUR").padEnd(3, "X");
+  return `KS-${prefix}-${randomBytes(4).toString("hex").toUpperCase()}`;
+}
+
 function parseImageUrls(body: Record<string, unknown>) {
   const submittedUrls = body.imageUrls;
   const rawUrls = submittedUrls !== undefined
@@ -152,7 +160,7 @@ function productDataFromBody(body: Record<string, unknown>) {
 
   return {
     categoryId,
-    sku: String(body.sku || "").trim().toUpperCase() || null,
+    sku: String(body.sku || "").trim().toUpperCase() || generateSku(body.furnitureType, body.name),
     name: requiredText("name", "Product name"),
     shortDescription: requiredText("shortDescription", "Short description"),
     brand: requiredText("brand", "Brand / collection"),
@@ -440,7 +448,7 @@ router.get("/products/new", requireAdminPage, async (req, res) => {
     categories,
     tagGroups,
     selectedTagIds: [],
-    formValues: {},
+    formValues: { sku: generateSku() },
     error: req.query.error,
     csrf: productCsrf(req),
     ...productOptions(),
