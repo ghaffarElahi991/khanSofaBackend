@@ -1,0 +1,53 @@
+<div class="mb-4">
+  <a href="/admin/products" class="text-decoration-none small">&larr; Back to products</a>
+  <h2 class="h4 mt-2">Import Products from CSV</h2>
+  <p class="text-muted small">Upload a Shopify export CSV. Products are grouped by <strong>URL handle</strong>.</p>
+</div>
+
+<% if (message) { %>
+  <div class="alert alert-success py-2"><%= message %></div>
+<% } %>
+<% if (error) { %>
+  <div class="alert alert-danger py-2"><%= error %></div>
+<% } %>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="POST" action="/admin/products/import" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">CSV File *</label>
+        <input type="file" name="csv" accept=".csv,text/csv" class="form-control" required>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" name="replaceAll" id="replaceAll" class="form-check-input">
+        <label class="form-check-label" for="replaceAll">
+          Replace all products (delete existing products, orders, and reviews first)
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary">Import CSV</button>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h6 class="card-title">CSV column mapping</h6>
+    <table class="table table-sm small mb-0">
+      <tbody>
+        <tr><td>Title</td><td>Product name</td></tr>
+        <tr><td>URL handle</td><td>Unique product ID (groups image rows)</td></tr>
+        <tr><td>Description</td><td>Full description</td></tr>
+        <tr><td>Vendor</td><td>Brand</td></tr>
+        <tr><td>Product category</td><td>Category (auto-mapped)</td></tr>
+        <tr><td>Tags</td><td>Best Seller / New Arrival flags</td></tr>
+        <tr><td>Price</td><td>Product price</td></tr>
+        <tr><td>Inventory quantity</td><td>Stock</td></tr>
+        <tr><td>Product image URL</td><td>Images (position 1 = main)</td></tr>
+        <tr><td>Option1 value</td><td>Color (when Option1 name = Color)</td></tr>
+      </tbody>
+    </table>
+    <p class="text-muted small mt-3 mb-0">
+      Re-importing the same handle updates the existing product.
+    </p>
+  </div>
+</div>

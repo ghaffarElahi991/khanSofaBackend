@@ -1,0 +1,30 @@
+-- Billing & checkout fields for Order
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "orderNumber" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "state" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "country" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "postalCode" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "billingSameAsShipping" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "billingAddress" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "billingCity" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "billingState" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "billingCountry" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "billingPostalCode" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT NOT NULL DEFAULT 'BANK_TRANSFER';
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "orderNotes" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "shippingCost" DECIMAL(10,2) NOT NULL DEFAULT 0;
+
+UPDATE "Order"
+SET "orderNumber" = 'LX-' || LPAD(id::text, 6, '0')
+WHERE "orderNumber" IS NULL;
+
+ALTER TABLE "Order" ALTER COLUMN "orderNumber" SET NOT NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'Order_orderNumber_key'
+  ) THEN
+    ALTER TABLE "Order" ADD CONSTRAINT "Order_orderNumber_key" UNIQUE ("orderNumber");
+  END IF;
+END $$;

@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+  reviews   Review[]
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  imageUrl    String
+  createdAt   DateTime  @default(now())
+  products    Product[]
+}
+
+model Product {
+  id                 Int         @id @default(autoincrement())
+  handle             String?     @unique
+  sku                String?     @unique
+  categoryId         Int
+  category           Category    @relation(fields: [categoryId], references: [id])
+  name               String
+  shortDescription   String
+  brand              String
+  price              Decimal     @db.Decimal(10, 2)
+  stock              Int         @default(0)
+  rating             Float       @default(0)
+  reviewCount        Int         @default(0)
+  primaryImageUrl    String
+  secondaryImageUrl  String?
+  images             String[]    @default([])
+  description        String      @db.Text
+  status             String      @default("In Stock")
+  isNewArrival       Boolean     @default(false)
+  isBestSeller       Boolean     @default(false)
+  colors             String[]    @default([])
+  configurations     String[]    @default([])
+  furnitureType      String      @default("Other")
+  material           String
+  upholsteryMaterial String?
+  frameMaterial      String?
+  cushionFilling     String?
+  finish             String?
+  room               String
+  dimensions         String
+  widthCm            Decimal?    @db.Decimal(8, 2)
+  depthCm            Decimal?    @db.Decimal(8, 2)
+  heightCm           Decimal?    @db.Decimal(8, 2)
+  seatHeightCm       Decimal?    @db.Decimal(8, 2)
+  seatingCapacity    Int?
+  weightKg           Decimal?    @db.Decimal(8, 2)
+  maxLoadKg          Decimal?    @db.Decimal(8, 2)
+  assemblyRequired   Boolean     @default(false)
+  warrantyMonths     Int         @default(12)
+  careInstructions   String?     @db.Text
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  orderItems         OrderItem[]
+  reviews            Review[]
+  tags               Tag[]
+}
+
+model TagGroup {
+  id        Int    @id @default(autoincrement())
+  name      String @unique
+  slug      String @unique
+  sortOrder Int    @default(0)
+  tags      Tag[]
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  slug      String    @unique
+  groupId   Int
+  group     TagGroup  @relation(fields: [groupId], references: [id])
+  sortOrder Int       @default(0)
+  products  Product[]
+  navItems  NavItem[]
+}
+
+model NavItem {
+  id        Int       @id @default(autoincrement())
+  label     String
+  href      String?
+  tagId     Int?
+  tag       Tag?      @relation(fields: [tagId], references: [id])
+  parentId  Int?
+  parent    NavItem?  @relation("NavTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  NavItem[] @relation("NavTree")
+  sortOrder Int       @default(0)
+  isVisible Boolean   @default(true)
+}
+
+model Order {
+  id                    Int           @id @default(autoincrement())
+  orderNumber           String        @unique
+  userId                Int?
+  user                  User?         @relation(fields: [userId], references: [id])
+  customerName          String
+  customerEmail         String
+  customerPhone         String
+  shippingAddress       String
+  city                  String
+  state                 String?
+  country               String        @default("")
+  postalCode            String?
+  billingSameAsShipping Boolean       @default(true)
+  billingAddress        String?
+  billingCity           String?
+  billingState          String?
+  billingCountry        String?
+  billingPostalCode     String?
+  paymentMethod         PaymentMethod @default(BANK_TRANSFER)
+  paymentStatus         PaymentStatus @default(PENDING)
+  stripeSessionId       String?       @unique
+  trackingToken         String        @unique @default(uuid())
+  trackingUrl           String?
+  stripePaymentIntentId String?
+  orderNotes            String?
+  status                OrderStatus   @default(PENDING)
+  subtotal              Decimal       @db.Decimal(10, 2)
+  shippingCost          Decimal       @default(0) @db.Decimal(10, 2)
+  discount              Decimal       @default(0) @db.Decimal(10, 2)
+  total                 Decimal       @db.Decimal(10, 2)
+  couponCode            String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  items                 OrderItem[]
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  WHATSAPP
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model OrderItem {
+  id            Int     @id @default(autoincrement())
+  orderId       Int
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     Int
+  product       Product @relation(fields: [productId], references: [id])
+  quantity      Int
+  price         Decimal @db.Decimal(10, 2)
+  color         String?
+  configuration String?
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id])
+  authorName  String
+  authorPhoto String?
+  rating      Int
+  comment     String   @db.Text
+  createdAt   DateTime @default(now())
+}
+
+model Coupon {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique
+  discountType  String
+  discountValue Decimal   @db.Decimal(10, 2)
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+}

@@ -1,0 +1,34 @@
+-- Tags, navigation, and product-tag relations
+
+CREATE TABLE IF NOT EXISTS "TagGroup" (
+  "id" SERIAL PRIMARY KEY,
+  "name" TEXT NOT NULL UNIQUE,
+  "slug" TEXT NOT NULL UNIQUE,
+  "sortOrder" INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS "Tag" (
+  "id" SERIAL PRIMARY KEY,
+  "name" TEXT NOT NULL UNIQUE,
+  "slug" TEXT NOT NULL UNIQUE,
+  "groupId" INTEGER NOT NULL REFERENCES "TagGroup"("id") ON DELETE CASCADE,
+  "sortOrder" INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS "NavItem" (
+  "id" SERIAL PRIMARY KEY,
+  "label" TEXT NOT NULL,
+  "href" TEXT,
+  "tagId" INTEGER REFERENCES "Tag"("id") ON DELETE SET NULL,
+  "parentId" INTEGER REFERENCES "NavItem"("id") ON DELETE CASCADE,
+  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+  "isVisible" BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS "_ProductToTag" (
+  "A" INTEGER NOT NULL REFERENCES "Product"("id") ON DELETE CASCADE,
+  "B" INTEGER NOT NULL REFERENCES "Tag"("id") ON DELETE CASCADE,
+  UNIQUE ("A", "B")
+);
+
+CREATE INDEX IF NOT EXISTS "_ProductToTag_B_index" ON "_ProductToTag"("B");

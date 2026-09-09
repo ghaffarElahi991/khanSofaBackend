@@ -1,0 +1,186 @@
+<%
+  const filterQuery = [
+    search ? 'search=' + encodeURIComponent(search) : '',
+    categoryId ? 'categoryId=' + categoryId : '',
+    status ? 'status=' + encodeURIComponent(status) : '',
+    furnitureType ? 'furnitureType=' + encodeURIComponent(furnitureType) : ''
+  ].filter(Boolean).join('&');
+  const hasFilters = Boolean(search || categoryId || status || furnitureType);
+%>
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+  <div>
+    <p class="eyebrow mb-2">Catalogue management</p>
+    <h1 class="display-6 mb-1">Furniture products</h1>
+    <p class="text-muted mb-0">Manage specifications, inventory, merchandising, and product visibility.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="/admin/products/import" class="btn btn-outline-secondary"><i class="bi bi-upload me-2"></i>Import CSV</a>
+    <a href="/admin/products/new" class="btn btn-primary"><i class="bi bi-plus-lg me-2"></i>Add furniture</a>
+  </div>
+</div>
+
+<% if (message) { %>
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-4" role="status"><i class="bi bi-check-circle-fill"></i><span><%= message %></span></div>
+<% } %>
+<% if (error) { %>
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert"><i class="bi bi-exclamation-circle-fill"></i><span><%= error %></span></div>
+<% } %>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="card h-100 p-3 p-lg-4">
+      <div class="d-flex align-items-center justify-content-between"><span class="text-muted small fw-semibold">All products</span><i class="bi bi-grid text-muted"></i></div>
+      <div class="fs-2 fw-bold mt-2"><%= stats.productCount %></div>
+      <div class="small text-muted">Furniture in your catalogue</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card h-100 p-3 p-lg-4">
+      <div class="d-flex align-items-center justify-content-between"><span class="text-muted small fw-semibold">Low stock</span><i class="bi bi-box-seam text-warning"></i></div>
+      <div class="fs-2 fw-bold mt-2"><%= stats.lowStockCount %></div>
+      <div class="small text-muted">Five or fewer remaining</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card h-100 p-3 p-lg-4">
+      <div class="d-flex align-items-center justify-content-between"><span class="text-muted small fw-semibold">Out of stock</span><i class="bi bi-x-circle text-danger"></i></div>
+      <div class="fs-2 fw-bold mt-2"><%= stats.outOfStockCount %></div>
+      <div class="small text-muted">Needs restock or status review</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card h-100 p-3 p-lg-4">
+      <div class="d-flex align-items-center justify-content-between"><span class="text-muted small fw-semibold">Drafts</span><i class="bi bi-eye-slash text-muted"></i></div>
+      <div class="fs-2 fw-bold mt-2"><%= stats.draftCount %></div>
+      <div class="small text-muted">Not ready to publish</div>
+    </div>
+  </div>
+</div>
+
+<form method="GET" action="/admin/products" class="card card-body mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div><h2 class="h6 admin-serif mb-0">Find and filter</h2><span class="small text-muted"><%= total %> matching <%= total === 1 ? 'product' : 'products' %></span></div>
+    <% if (hasFilters) { %><a href="/admin/products" class="btn btn-link btn-sm text-decoration-none">Clear filters</a><% } %>
+  </div>
+  <div class="row g-2">
+    <div class="col-12 col-lg-4">
+      <div class="input-group"><span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span><input type="search" name="search" class="form-control border-start-0 ps-0" placeholder="Name, brand, or SKU" value="<%= search || '' %>"></div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <select name="categoryId" class="form-select" aria-label="Category">
+        <option value="">All categories</option>
+        <% categories.forEach(function(category) { %><option value="<%= category.id %>" <%= categoryId === category.id ? 'selected' : '' %>><%= category.name %></option><% }); %>
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <select name="furnitureType" class="form-select" aria-label="Furniture type">
+        <option value="">All furniture types</option>
+        <% furnitureTypes.forEach(function(type) { %><option value="<%= type %>" <%= furnitureType === type ? 'selected' : '' %>><%= type %></option><% }); %>
+      </select>
+    </div>
+    <div class="col-7 col-lg-2">
+      <select name="status" class="form-select" aria-label="Product status">
+        <option value="">All statuses</option>
+        <% productStatuses.forEach(function(option) { %><option value="<%= option %>" <%= status === option ? 'selected' : '' %>><%= option %></option><% }); %>
+      </select>
+    </div>
+    <div class="col-5 col-lg-2"><button type="submit" class="btn btn-primary w-100">Apply</button></div>
+  </div>
+</form>
+
+<div class="card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead><tr><th>Furniture</th><th class="d-none d-lg-table-cell">Type & room</th><th>Price</th><th>Inventory</th><th class="d-none d-md-table-cell">Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        <% if (products.length === 0) { %>
+          <tr><td colspan="6" class="text-center py-5">
+            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px"><i class="bi bi-search fs-4 text-muted"></i></div>
+            <h3 class="h5">No furniture found</h3>
+            <p class="text-muted small mb-3"><%= hasFilters ? 'Try changing or clearing your filters.' : 'Add your first furniture product to get started.' %></p>
+            <a href="<%= hasFilters ? '/admin/products' : '/admin/products/new' %>" class="btn btn-sm btn-primary"><%= hasFilters ? 'Clear filters' : 'Add furniture' %></a>
+          </td></tr>
+        <% } %>
+        <% products.forEach(function(product) { %>
+          <tr>
+            <td style="min-width:290px">
+              <div class="d-flex align-items-center gap-3">
+                <img src="<%= product.primaryImageUrl %>" alt="" width="76" height="60" loading="lazy" class="rounded-3 border bg-light flex-shrink-0" style="object-fit:cover">
+                <div class="min-w-0">
+                  <a href="/admin/products/<%= product.id %>/edit" class="fw-bold text-dark text-decoration-none"><%= product.name %></a>
+                  <div class="small text-muted mt-1"><%= product.brand %><%= product.sku ? ' · ' + product.sku : '' %></div>
+                  <div class="d-md-none mt-1"><span class="badge bg-light text-dark border"><%= product.status %></span></div>
+                </div>
+              </div>
+            </td>
+            <td class="d-none d-lg-table-cell"><div class="fw-semibold"><%= product.furnitureType %></div><div class="small text-muted"><%= product.categoryName %> · <%= product.room %></div></td>
+            <td><span class="fw-bold">$<%= product.price.toFixed(2) %></span></td>
+            <td>
+              <% if (product.stock === 0) { %><span class="badge bg-danger-subtle text-danger-emphasis">0 left</span>
+              <% } else if (product.stock <= 5) { %><span class="badge bg-warning-subtle text-warning-emphasis"><%= product.stock %> left</span>
+              <% } else { %><span class="fw-semibold"><%= product.stock %></span><div class="small text-muted">in stock</div><% } %>
+            </td>
+            <td class="d-none d-md-table-cell">
+              <% const statusClass = product.status === 'In Stock' ? 'bg-success-subtle text-success-emphasis' : product.status === 'Out of Stock' ? 'bg-danger-subtle text-danger-emphasis' : product.status === 'Draft' ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-warning-subtle text-warning-emphasis'; %>
+              <span class="badge <%= statusClass %>"><%= product.status %></span>
+              <% if (product.isBestSeller) { %><div class="small text-muted mt-1"><i class="bi bi-star-fill text-warning me-1"></i>Best seller</div><% } %>
+            </td>
+            <td class="text-end" style="min-width:158px">
+              <div class="btn-group">
+                <a href="/admin/products/<%= product.id %>/edit" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"><span class="visually-hidden">More actions</span></button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                  <li><a class="dropdown-item" href="<%= storefrontUrl %>/product/<%= product.id %>" target="_blank" rel="noreferrer"><i class="bi bi-box-arrow-up-right me-2"></i>View in store</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <% if (product.canDelete) { %>
+                      <button type="button" class="dropdown-item text-danger delete-product" data-bs-toggle="modal" data-bs-target="#deleteProductModal" data-product-name="<%= product.name %>" data-delete-action="/admin/products/<%= product.id %>/delete"><i class="bi bi-trash3 me-2"></i>Delete product</button>
+                    <% } else { %>
+                      <span class="dropdown-item disabled" title="Products used in orders cannot be deleted"><i class="bi bi-lock me-2"></i>Linked to an order</span>
+                    <% } %>
+                  </li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if (totalPages > 1) { %>
+  <nav class="d-flex justify-content-between align-items-center mt-4" aria-label="Product pages">
+    <span class="text-muted small">Page <%= page %> of <%= totalPages %></span>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary <%= page <= 1 ? 'disabled' : '' %>" href="/admin/products?page=<%= page - 1 %><%= filterQuery ? '&' + filterQuery : '' %>"><i class="bi bi-arrow-left me-1"></i>Previous</a>
+      <a class="btn btn-outline-secondary <%= page >= totalPages ? 'disabled' : '' %>" href="/admin/products?page=<%= page + 1 %><%= filterQuery ? '&' + filterQuery : '' %>">Next<i class="bi bi-arrow-right ms-1"></i></a>
+    </div>
+  </nav>
+<% } %>
+
+<div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-2">
+      <div class="modal-body p-4">
+        <div class="rounded-circle bg-danger-subtle text-danger d-flex align-items-center justify-content-center mb-3" style="width:48px;height:48px"><i class="bi bi-trash3 fs-5"></i></div>
+        <h2 class="h4" id="deleteProductTitle">Delete this product?</h2>
+        <p class="text-muted mb-0">You are about to permanently delete <strong id="deleteProductName" class="text-dark"></strong>. This cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0 px-4 pb-4 pt-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep product</button>
+        <form id="deleteProductForm" method="POST" action=""><input type="hidden" name="csrf" value="<%= csrf %>"><button type="submit" class="btn btn-danger"><i class="bi bi-trash3 me-2"></i>Delete permanently</button></form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.delete-product').forEach(function (button) {
+    button.addEventListener('click', function () {
+      document.getElementById('deleteProductName').textContent = button.dataset.productName || 'this product';
+      document.getElementById('deleteProductForm').action = button.dataset.deleteAction || '';
+    });
+  });
+</script>
